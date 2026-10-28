@@ -112,6 +112,19 @@ class AutomationRulesTest {
   }
 
   @Test
+  void monotonicTimerWorksWithNegativeOriginAndWraparound() {
+    ActionTimer t = new ActionTimer();
+    assertTrue(t.ready(-900_000_000L, 1));
+    t.rearm(-900_000_000L, 625);
+    assertFalse(t.ready(-276_000_000L, 1));
+    assertTrue(t.ready(-275_000_000L, 1));
+    long origin = Long.MAX_VALUE - 100_000_000L;
+    t.rearm(origin, 625);
+    assertFalse(t.ready(origin + 624_999_999L, 2));
+    assertTrue(t.ready(origin + 625_000_000L, 2));
+  }
+
+  @Test
   void standaloneSurvivesProfileAndClickerTransitions() {
     Activation a = new Activation();
     a.autoClicker = true;

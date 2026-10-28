@@ -341,7 +341,7 @@ public final class ConfigScreen {
       ae.option(
           string(
               "Food blacklist",
-              "Comma-separated item IDs. Food must have FOOD and CONSUMABLE components. Ominous"
+              "Comma-separated item IDs. Only edible food is considered. Ominous"
                   + " bottles are not food.",
               ed.blacklist,
               () -> e.blacklist,

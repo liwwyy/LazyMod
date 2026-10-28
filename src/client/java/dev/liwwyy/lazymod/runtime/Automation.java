@@ -25,7 +25,8 @@ public final class Automation {
   private Owner owner = Owner.NONE;
   private InteractionHand ownedHand;
   private boolean automatic;
-  private long frame, yieldUntil;
+  private long frame;
+  private long yieldUntil = System.nanoTime();
   private Object level;
   private String suspended = "";
 
@@ -202,7 +203,7 @@ public final class Automation {
       ownedHand = null;
     }
     long now = System.nanoTime();
-    if (now < yieldUntil || mc.options.keyAttack.isDown() || mc.options.keyUse.isDown()) {
+    if (now - yieldUntil < 0 || mc.options.keyAttack.isDown() || mc.options.keyUse.isDown()) {
       eater.stop();
       releaseUse();
       suspended = "Waiting for physical input";

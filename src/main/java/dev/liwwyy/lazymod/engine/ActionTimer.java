@@ -4,14 +4,16 @@ package dev.liwwyy.lazymod.engine;
 /** Monotonic deadlines; no accumulated debt and no dispatch twice within a render frame. */
 public final class ActionTimer {
   private long next;
+  private boolean armed;
   private long frame = Long.MIN_VALUE;
 
   public void rearm(long now, int milliseconds) {
     next = now + milliseconds * 1_000_000L;
+    armed = true;
   }
 
   public boolean ready(long now, long currentFrame) {
-    return now >= next && frame != currentFrame;
+    return (!armed || now - next >= 0) && frame != currentFrame;
   }
 
   public void fired(long now, long currentFrame, int milliseconds) {
