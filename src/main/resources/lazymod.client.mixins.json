@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "package": "dev.liwwyy.lazymod.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "MinecraftAccess",
+    "MinecraftMixin",
+    "GuiMixin",
+    "MouseMixin",
+    "KeyboardMixin",
+    "CommandMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

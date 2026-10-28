@@ -1,0 +1,83 @@
+plugins { id 'net.fabricmc.fabric-loom' version "${loom_version}" }
+version = "${mod_version}+${minecraft_version}"
+group = 'dev.liwwyy'
+base { archivesName = 'lazymod' }
+repositories {
+    mavenCentral()
+    maven { url = 'https://api.modrinth.com/maven'; content { includeGroup 'maven.modrinth' } }
+}
+loom {
+    splitEnvironmentSourceSets()
+    mods { lazymod { sourceSet sourceSets.main; sourceSet sourceSets.client } }
+}
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
+    implementation "maven.modrinth:yacl:${yacl_version}"
+    testImplementation platform('org.junit:junit-bom:6.1.3')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+processResources { inputs.property 'version', project.version; filesMatching('fabric.mod.json') { expand version: project.version } }
+java { toolchain.languageVersion = JavaLanguageVersion.of(25); withSourcesJar() }
+tasks.withType(JavaCompile).configureEach { options.release = 25 }
+test { useJUnitPlatform() }
+jar { from('LICENSE'); from('THIRD_PARTY_NOTICES.md'); from('licenses') { into 'licenses' } }
+tasks.register('verifyReleaseVersion') {
+    doLast {
+        def tag = providers.environmentVariable('RELEASE_TAG').orElse('').get()
+        if (!(tag ==~ /v[0-9]+\.[0-9]+\.[0-9]+/) || tag != "v${mod_version}") {
+            throw new GradleException("Tag ${tag} must match v${mod_version}")
+        }
+    }
+}
+
+// Check actual game members without launching a client or headless instance.
+tasks.register('verifyMixinTargets') {
+    dependsOn compileClientJava
+    doLast {
+        def gameJar = sourceSets.client.compileClasspath.files.find { file ->
+            if (!file.name.endsWith('.jar')) return false
+            def zip = new java.util.zip.ZipFile(file)
+            try { return zip.getEntry('net/minecraft/client/Minecraft.class') != null } finally { zip.close() }
+        }
+        if (gameJar == null) throw new GradleException('Could not locate the Minecraft client compile artifact')
+        def result = providers.exec { ignoreExitValue = true; commandLine 'python3', 'scripts/verify-mixins.py', gameJar.absolutePath }
+        logger.lifecycle(result.standardOutput.asText.get())
+        logger.lifecycle(result.standardError.asText.get())
+        result.result.get().assertNormalExitValue()
+    }
+}
+tasks.register('testInstaller') {
+    doLast {
+        def result = providers.exec { ignoreExitValue = true; commandLine 'python3', '-m', 'unittest', 'discover', '-s', 'scripts', '-p', 'test_*.py' }
+        logger.lifecycle(result.standardOutput.asText.get())
+        logger.lifecycle(result.standardError.asText.get())
+        result.result.get().assertNormalExitValue()
+    }
+}
+check.dependsOn verifyMixinTargets, testInstaller
+
+tasks.register('verifyArtifact') {
+    dependsOn jar
+    doLast {
+        def result = providers.exec { ignoreExitValue = true; commandLine 'python3', 'scripts/verify-artifact.py', '--stage' }
+        logger.lifecycle(result.standardOutput.asText.get())
+        logger.lifecycle(result.standardError.asText.get())
+        result.result.get().assertNormalExitValue()
+    }
+}
+build.dependsOn verifyArtifact
+// Remove stale success receipts before any build task dependency can fail.
+gradle.taskGraph.whenReady { graph ->
+    if (graph.hasTask(tasks.build)) delete layout.buildDirectory.file('verified-build.json')
+}
+build.doLast {
+    def receipt = providers.exec { commandLine 'python3', 'scripts/verify-artifact.py', '--receipt' }
+    logger.lifecycle(receipt.standardOutput.asText.get())
+    if (providers.environmentVariable('CI').orElse('false').get() != 'true') {
+        def install = providers.exec { commandLine 'python3', 'scripts/install-local.py' }
+        logger.lifecycle(install.standardOutput.asText.get())
+    }
+}
