@@ -29,7 +29,8 @@ public final class ProfileCatalog {
       p.left.conditions.target = Target.ARMOR_STAND;
       p.right.conditions = ConfigStore.copy(p.left.conditions, Conditions.class);
       p.right.mode = Mode.HOLD;
-      p.right.use = Use.ITEM_ONLY;
+      p.targetGraceMs = 1000;
+      p.right.use = Use.VANILLA;
       p.right.useHand = Hand.OFF;
     }
     return p;
@@ -107,6 +108,7 @@ public final class ProfileCatalog {
   public static void reset(Profile p) {
     if (builtin(p.id)) return;
     Profile defaults = builtin(p.sourcePreset) ? preset(p.sourcePreset) : new Profile();
+    p.targetGraceMs = defaults.targetGraceMs;
     p.left = defaults.left;
     p.right = defaults.right;
     p.integrateAutoEat = defaults.integrateAutoEat;

@@ -9,6 +9,18 @@ import org.junit.jupiter.api.Test;
 
 class ProfilesTest {
   @Test
+  void graceDefaultsAndResetAreProfileSpecific() {
+    Settings settings = new Settings();
+    assertEquals(1000, ProfileCatalog.preset(ProfileCatalog.RAID).targetGraceMs);
+    assertEquals(0, ProfileCatalog.preset(ProfileCatalog.SPAWNER).targetGraceMs);
+    Profile copy = ProfileCatalog.editable(settings);
+    copy.targetGraceMs = 2500;
+    ProfileCatalog.reset(copy);
+    assertEquals(1000, copy.targetGraceMs);
+    assertEquals(Use.VANILLA, copy.right.use);
+  }
+
+  @Test
   void presetEditingCreatesIndependentCopy() {
     Settings s = new Settings();
     Profile p = ProfileCatalog.editable(s);
@@ -26,7 +38,7 @@ class ProfilesTest {
     Profile p = ProfileCatalog.preset(ProfileCatalog.RAID);
     assertEquals("minecraft:ominous_bottle", p.left.conditions.offItems);
     assertEquals(Hand.OFF, p.right.useHand);
-    assertEquals(Use.ITEM_ONLY, p.right.use);
+    assertEquals(Use.VANILLA, p.right.use);
     p.right.conditions.offItems = "";
     assertFalse(p.left.conditions.offItems.isEmpty());
     assertFalse(ProfileCatalog.preset(ProfileCatalog.RAID).right.conditions.offItems.isEmpty());

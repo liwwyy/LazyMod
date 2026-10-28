@@ -7,6 +7,9 @@ import dev.liwwyy.lazymod.mixin.MinecraftAccess;
 import net.minecraft.client.Minecraft;
 
 final class AutoClicker {
+  private net.minecraft.world.phys.HitResult lastTarget;
+  private long lastTargetAt, lastRightAt;
+  private net.minecraft.world.phys.HitResult lastRightTarget;
   private final Automation a;
   private final Minecraft mc;
   private final ActionTimer left = new ActionTimer(), right = new ActionTimer();
@@ -20,6 +23,8 @@ final class AutoClicker {
   }
 
   void reset() {
+    lastTarget = null;
+    lastRightTarget = null;
     long now = System.nanoTime();
     Profile p = a.profile();
     left.rearm(now, p.left.intervalMs);
@@ -54,10 +59,46 @@ final class AutoClicker {
     Profile p = a.profile();
     Rules.View view = MinecraftBridge.view(mc, true);
     leftReason = reason(p.left, view);
+    if (leftReason.isEmpty() && view.validTarget()) {
+      lastTarget = mc.hitResult;
+      lastTargetAt = now;
+    }
+    boolean grace =
+        lastTarget != null
+            && p.targetGraceMs > 0
+            && now - lastTargetAt < p.targetGraceMs * 1_000_000L;
+    boolean cachedAttack = false;
+    net.minecraft.world.phys.HitResult currentTarget = mc.hitResult;
+    if (grace && !leftReason.isEmpty()) {
+      mc.hitResult = lastTarget;
+      try {
+        view = MinecraftBridge.view(mc, true);
+        leftReason = reason(p.left, view);
+        cachedAttack = leftReason.isEmpty();
+      } finally {
+        mc.hitResult = currentTarget;
+      }
+    }
     // Left automation is intentionally entity-only: no unrequested air swings/block mining.
     if (leftReason.isEmpty() && (view.target() == Target.NONE || view.target() == Target.BLOCK))
       leftReason = "An entity target is required for attacks";
     rightReason = reason(p.right, MinecraftBridge.view(mc, false));
+    if (rightReason.isEmpty() && MinecraftBridge.view(mc, false).validTarget()) {
+      lastRightTarget = mc.hitResult;
+      lastRightAt = now;
+    }
+    boolean rightGrace =
+        lastRightTarget != null
+            && p.targetGraceMs > 0
+            && now - lastRightAt < p.targetGraceMs * 1_000_000L;
+    if (rightGrace && !rightReason.isEmpty()) {
+      mc.hitResult = lastRightTarget;
+      try {
+        rightReason = reason(p.right, MinecraftBridge.view(mc, false));
+      } finally {
+        mc.hitResult = currentTarget;
+      }
+    }
     if (a.owner() == Automation.Owner.CLICKER
         && (!rightReason.isEmpty() || p.right.mode != Mode.HOLD)) a.releaseUse();
     if (mc.player.isUsingItem()) {
@@ -70,7 +111,12 @@ final class AutoClicker {
               ? mc.player.getAttackStrengthScale(0.0F) >= 1.0F
               : left.ready(now, a.currentFrame());
       if (ready && lastManualLeftFrame != a.currentFrame() && lastLeftFrame != a.currentFrame()) {
-        a.automatic(() -> ((MinecraftAccess) mc).lazymod$attack());
+        if (cachedAttack) mc.hitResult = lastTarget;
+        try {
+          a.automatic(() -> ((MinecraftAccess) mc).lazymod$attack());
+        } finally {
+          mc.hitResult = currentTarget;
+        }
         lastLeftFrame = a.currentFrame();
         left.fired(now, a.currentFrame(), p.left.intervalMs);
         // Vanilla also handles attacks before use when both inputs are present.

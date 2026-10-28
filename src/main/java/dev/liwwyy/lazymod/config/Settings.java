@@ -54,6 +54,7 @@ public final class Settings {
     public String name;
     public String sourcePreset;
     public boolean integrateAutoEat;
+    public int targetGraceMs;
     public Button left = new Button();
     public Button right = new Button();
 

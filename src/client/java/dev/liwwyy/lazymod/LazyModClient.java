@@ -89,7 +89,23 @@ public final class LazyModClient implements ClientModInitializer {
 
   public void message(String text) {
     Minecraft mc = Minecraft.getInstance();
-    if (mc.player != null) mc.player.sendSystemMessage(Component.literal("[LazyMod] " + text));
+    if (mc.player != null)
+      mc.player.sendSystemMessage(
+          Component.literal("❯ ")
+              .withStyle(net.minecraft.ChatFormatting.DARK_GRAY)
+              .append(
+                  Component.literal("LazyMod")
+                      .withStyle(
+                          net.minecraft.ChatFormatting.LIGHT_PURPLE,
+                          net.minecraft.ChatFormatting.BOLD))
+              .append(Component.literal(" │ ").withStyle(net.minecraft.ChatFormatting.DARK_GRAY))
+              .append(
+                  Component.literal(text)
+                      .withStyle(
+                          text.toLowerCase(java.util.Locale.ROOT).contains("error")
+                                  || text.contains("Could not")
+                              ? net.minecraft.ChatFormatting.RED
+                              : net.minecraft.ChatFormatting.AQUA)));
     else LOG.info(text);
   }
 

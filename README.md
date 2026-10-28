@@ -77,13 +77,13 @@ The original remains available. Custom profiles use the same engine.
 | Main hand | Sword (`#minecraft:swords`) | Nonempty item |
 | Offhand | Ominous bottle, any level | Unrestricted |
 | Durability | Main-hand remaining durability >1% | Main-hand remaining durability >1% |
-| Right | Hold, explicit offhand item-only use; same initial conditions as left | Disabled, independently editable |
+| Right | Hold, vanilla interaction; same initial conditions as left | Disabled, independently editable |
 | Integrated AutoEat | On | On |
 
 **Raidfarm is intentionally strict:** attacks wait while the player drinks.
 After the last offhand ominous bottle is consumed, the offhand condition fails
 and attacks stop until another bottle is supplied. There is no automatic refill
-or hidden omen-effect condition. Item-only use avoids interacting with/equipping
+or hidden omen-effect condition. Optional item-only use avoids interacting with/equipping
 the armor stand instead of drinking.
 
 New custom profiles start with left repeat at 625 ms, Vanilla Cooldown off,
@@ -210,3 +210,12 @@ tag is automatically created by ordinary development builds.
 Original LazyMod code: [MIT](LICENSE). Meteor was inspected as a behavioral reference;
 no Meteor source was copied/adapted. YACL remains an external LGPL dependency.
 See [third-party notices](THIRD_PARTY_NOTICES.md).
+
+## Target grace and Mod Menu
+
+Mod Menu opens the same YACL screen as `/lazy`. Each profile has a configurable
+0–10000 ms target grace period; Raidfarm defaults to 1000 ms. Grace retains the last
+valid target, while item, durability, life and reach checks remain enforced.
+Raidfarm now defaults to vanilla right-click interaction; this can interact with
+an armor stand instead of drinking. Choose item-only offhand use when needed.
+Existing custom profiles retain their saved settings.

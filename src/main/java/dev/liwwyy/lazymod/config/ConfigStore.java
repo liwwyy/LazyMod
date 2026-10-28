@@ -149,6 +149,10 @@ public final class ConfigStore {
         p.right.mode = Mode.DISABLED;
         issues.add("missing right settings");
       }
+      if (p.targetGraceMs < 0 || p.targetGraceMs > 10000) {
+        p.targetGraceMs = 0;
+        issues.add("invalid target grace");
+      }
       repair(p.left, true, issues);
       repair(p.right, false, issues);
     }

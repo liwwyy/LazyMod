@@ -126,6 +126,7 @@ public final class ConfigScreen {
         target.left = ConfigStore.copy(working.left, Button.class);
         target.right = ConfigStore.copy(working.right, Button.class);
         target.integrateAutoEat = working.integrateAutoEat;
+        target.targetGraceMs = working.targetGraceMs;
       }
     }
 
@@ -161,7 +162,7 @@ public final class ConfigScreen {
                   desc(
                       "Selection is applied with Save. Built-in settings edits create a custom"
                           + " copy."))
-              .binding(working.name, () -> working.name, value -> {})
+              .binding(working.name, () -> working.name, name -> {})
               .controller(
                   o ->
                       DropdownStringControllerBuilder.create(o)
@@ -170,9 +171,14 @@ public final class ConfigScreen {
               .listener(
                   (option, name) -> {
                     if (building || name.equals(working.name)) return;
-                    capture();
-                    draft.selectedProfile = ProfileCatalog.named(draft, name).id;
-                    show();
+                    // Defer rebuilding until the dropdown has completed processing the click.
+                    Minecraft.getInstance()
+                        .schedule(
+                            () -> {
+                              capture();
+                              draft.selectedProfile = ProfileCatalog.named(draft, name).id;
+                              show();
+                            });
                   })
               .build();
       ac.option(selection);
@@ -287,6 +293,16 @@ public final class ConfigScreen {
               text(
                   "Raidfarm uses offhand item-only Hold. Drinking suspends attacks; consuming the"
                       + " last offhand bottle stops attacks until replaced.")));
+      ac.option(
+          integer(
+              "Target grace period (ms)",
+              "Continue using the last valid target briefly after looking away. Item, durability"
+                  + " and reach checks still apply. Zero disables grace.",
+              defaults.targetGraceMs,
+              0,
+              10000,
+              () -> working.targetGraceMs,
+              v -> working.targetGraceMs = v));
       ac.group(buttonGroup(true, working.left, defaults.left));
       ac.group(buttonGroup(false, working.right, defaults.right));
       var ae = ConfigCategory.createBuilder().name(text("AutoEat"));
