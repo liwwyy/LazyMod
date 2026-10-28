@@ -1,12 +1,10 @@
 # Changelog
 
-## Unreleased
+## [1.0.0] — 2026-10-29
 
 - Add Mod Menu configuration integration and defer profile dropdown rebuilding.
 - Add per-profile target grace; Raidfarm defaults to 1000 ms and vanilla right use.
 - Add colored chat branding and separators.
-
-## [1.0.0] — 2026-10-28
 
 - Initial Fabric client mod for Minecraft 26.2, Java 25.
 - AutoClicker with immutable Raidfarm/Spawner presets and editable local profiles.
